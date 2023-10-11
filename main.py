@@ -1,13 +1,16 @@
 import pygame
 import sys
+import random
 
 size = width, height = 600, 600
 black = 0, 0, 0
 white = 255, 255, 255
 speed = 1
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption("Touhou")
-projectileArray = []
+pygame.display.set_caption("A Level Project")
+projectileArrayPlayer = []
+projectileArrayEnemy = []
+enemyArray = []
 
 
 class Player:
@@ -60,27 +63,53 @@ class Player:
         pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), 3)
 
 
+class enemy:
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = 20
+        self.height = 20
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+    def fire(self):
+        projectileArrayEnemy.append(projectile(self.rect.x, self.rect.y))
+
+    def display(self):
+        pygame.draw.rect(screen, (0, 225, 0), self.rect)
+
+
 class projectile:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.width = 10
-        self.height = 10
-        self.rect = pygame.Rect(self.x,self.y,self.width,self.height)
+        self.movementcounter = 0
+        self.width = 6
+        self.height = 6
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def display(self):
-        pygame.draw.rect(screen, (255, 0, 0), self.rect)
-        self.rect.y -= 1
+        pygame.draw.rect(screen, (255, 3, 234), self.rect)
+        self.movementcounter += 1
+        if self.movementcounter == 6:
+            self.movementcounter = 0
+            self.rect.y -= 1
 
 
 player1 = Player()
 Clock = pygame.time.Clock()
 screen.fill((0, 0, 0))
 player1.display()
-lastTime = 0
-firstTime = 0
+lastTimeFired = 0
+firstTimeFired = 0
+lastTimeSpawned = 0
+thisTimeSpawned = 0
+enemiesSpawn = False
 
 while True:
+    if pygame.time.get_ticks() > 5000:
+        enemiesSpawn = True
+
     # closes the game if the pygame window is closed
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -109,31 +138,44 @@ while True:
     time = False
     checkFire = pygame.key.get_pressed()
     if checkFire[pygame.K_z]:
-        firstTime = pygame.time.get_ticks()
+        firstTimeFired = pygame.time.get_ticks()
         fire = True
 
-    if firstTime-lastTime>=20:
+    if firstTimeFired - lastTimeFired >= 100:
         time = True
 
-
     if fire and time:
-        lastTime = pygame.time.get_ticks()
-        projectileArray.append(projectile(player1.x, player1.y))
+        lastTimeFired = pygame.time.get_ticks()
+        projectileArrayPlayer.append(projectile(player1.x, player1.y))
         time = False
+
+    thisTimeSpawned = pygame.time.get_ticks()
+
+    if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 10000:
+        lastTimeSpawned = pygame.time.get_ticks()
+        numofen = random.randint(1, 4)
+        for i in range(0, numofen):
+            enemyArray.append(enemy(random.randint(0,580), random.randint(0,150)))
+
 
     # redraws the screen
     screen.fill((0, 0, 0))
     player1.display()
-    for i in range(0, len(projectileArray)):
+    for i in range(0, len(projectileArrayPlayer)):
         try:
-            if projectileArray[i].rect.y < 0:
-                del projectileArray[i]
+            if projectileArrayPlayer[i].rect.y < 0:
+                del projectileArrayPlayer[i]
         except:
             pass
         try:
-            projectileArray[i].display()
+            projectileArrayPlayer[i].display()
+        except:
+            pass
+
+    for i in range(0, len(enemyArray)):
+        try:
+            enemyArray[i].display()
         except:
             pass
 
     pygame.display.flip()
-
