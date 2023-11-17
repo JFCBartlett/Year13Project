@@ -32,7 +32,7 @@ class Player:
                 if shift:
                     self.y -= 0.08
                 else:
-                    self.y -= 0.15
+                    self.y -= 0.3
         elif direction1 == "down":
             if self.y >= 600 - 3:
                 self.y = 600 - 3
@@ -40,7 +40,7 @@ class Player:
                 if shift:
                     self.y += 0.08
                 else:
-                    self.y += 0.15
+                    self.y += 0.3
         if direction1 == "left":
             if self.x <= 3:
                 self.x = 3
@@ -48,7 +48,7 @@ class Player:
                 if shift:
                     self.x -= 0.08
                 else:
-                    self.x -= 0.15
+                    self.x -= 0.4
         elif direction1 == "right":
             if self.x >= 600 - 3:
                 self.x = 600 - 3
@@ -56,7 +56,7 @@ class Player:
                 if shift:
                     self.x += 0.08
                 else:
-                    self.x += 0.15
+                    self.x += 0.4
 
     # draw the character and defines its size
     def display(self):
@@ -70,10 +70,14 @@ class enemy:
         self.y = y
         self.width = 20
         self.height = 20
+        self.health = 8
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def fire(self):
         projectileArrayEnemy.append(projectile(self.rect.x, self.rect.y))
+
+    def lose_health(self):
+        self.health -= 1
 
     def display(self):
         pygame.draw.rect(screen, (0, 225, 0), self.rect)
@@ -88,10 +92,14 @@ class projectile:
         self.height = 6
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
+    def check_collision(self, Enemy):
+        return self.rect.colliderect(Enemy.rect)
+
+
     def display(self):
         pygame.draw.rect(screen, (255, 3, 234), self.rect)
         self.movementcounter += 1
-        if self.movementcounter == 6:
+        if self.movementcounter == 1:
             self.movementcounter = 0
             self.rect.y -= 1
 
@@ -144,6 +152,7 @@ while True:
     if firstTimeFired - lastTimeFired >= 100:
         time = True
 
+    #fires projectiles
     if fire and time:
         lastTimeFired = pygame.time.get_ticks()
         projectileArrayPlayer.append(projectile(player1.x, player1.y))
@@ -151,11 +160,28 @@ while True:
 
     thisTimeSpawned = pygame.time.get_ticks()
 
-    if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 10000:
+    #spawns enemies
+    if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 5000:
         lastTimeSpawned = pygame.time.get_ticks()
-        numofen = random.randint(1, 4)
-        for i in range(0, numofen):
+        numOfEn = random.randint(1, 4)
+        for i in range(0, numOfEn):
             enemyArray.append(enemy(random.randint(0,580), random.randint(0,150)))
+
+    #checks for collision
+    for i in range(0, len(projectileArrayPlayer)):
+        try:
+            for j in range(0, len(enemyArray)):
+                try:
+                    if projectileArrayPlayer[i].check_collision(enemyArray[j]):
+                        del projectileArrayPlayer[i]
+                        enemyArray[j].lose_health()
+                        if enemyArray[j].health == 0:
+                            del enemyArray[j]
+                except:
+                    pass
+        except:
+            pass
+
 
 
     # redraws the screen
