@@ -17,6 +17,7 @@ class Player:
     def __init__(self):
         self.x = 300
         self.y = 500
+        self.bombs = 3
         # this is the starting position of the player
 
     def move(self, direction1, shift):
@@ -32,7 +33,7 @@ class Player:
                 if shift:
                     self.y -= 0.08
                 else:
-                    self.y -= 0.3
+                    self.y -= 0.23
         elif direction1 == "down":
             if self.y >= 600 - 3:
                 self.y = 600 - 3
@@ -40,7 +41,7 @@ class Player:
                 if shift:
                     self.y += 0.08
                 else:
-                    self.y += 0.3
+                    self.y += 0.23
         if direction1 == "left":
             if self.x <= 3:
                 self.x = 3
@@ -48,7 +49,7 @@ class Player:
                 if shift:
                     self.x -= 0.08
                 else:
-                    self.x -= 0.4
+                    self.x -= 0.3
         elif direction1 == "right":
             if self.x >= 600 - 3:
                 self.x = 600 - 3
@@ -56,7 +57,7 @@ class Player:
                 if shift:
                     self.x += 0.08
                 else:
-                    self.x += 0.4
+                    self.x += 0.3
 
     # draw the character and defines its size
     def display(self):
@@ -95,7 +96,6 @@ class projectile:
     def check_collision(self, Enemy):
         return self.rect.colliderect(Enemy.rect)
 
-
     def display(self):
         pygame.draw.rect(screen, (255, 3, 234), self.rect)
         self.movementcounter += 1
@@ -112,6 +112,7 @@ lastTimeFired = 0
 firstTimeFired = 0
 lastTimeSpawned = 0
 thisTimeSpawned = 0
+lasttimebombed = 0
 enemiesSpawn = False
 
 while True:
@@ -152,7 +153,7 @@ while True:
     if firstTimeFired - lastTimeFired >= 100:
         time = True
 
-    #fires projectiles
+    # fires projectiles
     if fire and time:
         lastTimeFired = pygame.time.get_ticks()
         projectileArrayPlayer.append(projectile(player1.x, player1.y))
@@ -160,14 +161,26 @@ while True:
 
     thisTimeSpawned = pygame.time.get_ticks()
 
-    #spawns enemies
+    CheckBomb = pygame.key.get_pressed()
+    if CheckBomb[pygame.K_x]:
+        if pygame.time.get_ticks() - lasttimebombed >= 500:
+            if player1.bombs > 0:
+                player1.bombs -= 1
+                enemyArray = []
+                projectileArrayEnemy = []
+
+                lasttimebombed = pygame.time.get_ticks()
+
+
+
+    # spawns enemies
     if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 5000:
         lastTimeSpawned = pygame.time.get_ticks()
         numOfEn = random.randint(1, 4)
         for i in range(0, numOfEn):
-            enemyArray.append(enemy(random.randint(0,580), random.randint(0,150)))
+            enemyArray.append(enemy(random.randint(0, 580), random.randint(0, 150)))
 
-    #checks for collision
+    # checks for collision
     for i in range(0, len(projectileArrayPlayer)):
         try:
             for j in range(0, len(enemyArray)):
@@ -181,8 +194,6 @@ while True:
                     pass
         except:
             pass
-
-
 
     # redraws the screen
     screen.fill((0, 0, 0))
