@@ -88,7 +88,6 @@ class projectile:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.movementcounter = 0
         self.width = 6
         self.height = 6
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
@@ -98,10 +97,11 @@ class projectile:
 
     def display(self):
         pygame.draw.rect(screen, (255, 3, 234), self.rect)
-        self.movementcounter += 1
-        if self.movementcounter == 1:
-            self.movementcounter = 0
-            self.rect.y -= 1
+
+class straight(projectile):
+
+    def move(self):
+        self.rect.y -= 1
 
 
 player1 = Player()
@@ -112,7 +112,7 @@ lastTimeFired = 0
 firstTimeFired = 0
 lastTimeSpawned = 0
 thisTimeSpawned = 0
-lasttimebombed = 0
+lastTimeBombed = 0
 enemiesSpawn = False
 
 while True:
@@ -156,20 +156,19 @@ while True:
     # fires projectiles
     if fire and time:
         lastTimeFired = pygame.time.get_ticks()
-        projectileArrayPlayer.append(projectile(player1.x, player1.y))
+        projectileArrayPlayer.append(straight(player1.x, player1.y))
         time = False
 
     thisTimeSpawned = pygame.time.get_ticks()
 
     CheckBomb = pygame.key.get_pressed()
     if CheckBomb[pygame.K_x]:
-        if pygame.time.get_ticks() - lasttimebombed >= 500:
+        if pygame.time.get_ticks() - lastTimeBombed >= 500:
             if player1.bombs > 0:
                 player1.bombs -= 1
                 enemyArray = []
                 projectileArrayEnemy = []
-
-                lasttimebombed = pygame.time.get_ticks()
+                lastTimeBombed = pygame.time.get_ticks()
 
 
 
@@ -205,6 +204,7 @@ while True:
         except:
             pass
         try:
+            projectileArrayPlayer[i].move()
             projectileArrayPlayer[i].display()
         except:
             pass
