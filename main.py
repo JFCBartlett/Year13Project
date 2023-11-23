@@ -2,7 +2,9 @@ import pygame
 import sys
 import random
 
-size = width, height = 600, 600
+pygame.font.init()
+font = pygame.font.SysFont("Arial", 36)
+size = width, height = 800, 600
 black = 0, 0, 0
 white = 255, 255, 255
 speed = 1
@@ -18,6 +20,8 @@ class Player:
         self.x = 300
         self.y = 500
         self.bombs = 3
+        self.power = 0
+        self.lives = 5
         # this is the starting position of the player
 
     def move(self, direction1, shift):
@@ -49,7 +53,7 @@ class Player:
                 if shift:
                     self.x -= 0.08
                 else:
-                    self.x -= 0.3
+                    self.x -= 0.24
         elif direction1 == "right":
             if self.x >= 600 - 3:
                 self.x = 600 - 3
@@ -57,7 +61,7 @@ class Player:
                 if shift:
                     self.x += 0.08
                 else:
-                    self.x += 0.3
+                    self.x += 0.24
 
     # draw the character and defines its size
     def display(self):
@@ -71,11 +75,12 @@ class enemy:
         self.y = y
         self.width = 20
         self.height = 20
-        self.health = 8
+        self.health = random.randint(1,10)
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def fire(self):
-        projectileArrayEnemy.append(projectile(self.rect.x, self.rect.y))
+        projectileArrayEnemy.append(straight(self.rect.x, self.rect.y))
+
 
     def lose_health(self):
         self.health -= 1
@@ -83,13 +88,32 @@ class enemy:
     def display(self):
         pygame.draw.rect(screen, (0, 225, 0), self.rect)
 
+class Power:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = 10
+        self.height = 10
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+        def check_collision(self, player):
+            return self.rect.colliderect(player.rect)
+
+        def display(self):
+            pygame.draw.rect(screen, (225, 0, 0), self.rect)
+            rect.y -= 1
 
 class projectile:
-    def __init__(self, x, y):
+    def __init__(self, x, y, ownedby):
+        if ownedby == "player":
+            self.ownedByPlayer = True
+        else:
+            self.ownedByPlayer = False
         self.x = x
         self.y = y
         self.width = 6
         self.height = 6
+        self.movementCounter = 0
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def check_collision(self, Enemy):
@@ -101,7 +125,11 @@ class projectile:
 class straight(projectile):
 
     def move(self):
-        self.rect.y -= 1
+        self.movementCounter += 1
+        if self.movementCounter >= 4:
+            self.movementCounter = 0
+            self.rect.y -= 1
+
 
 
 player1 = Player()
@@ -114,6 +142,7 @@ lastTimeSpawned = 0
 thisTimeSpawned = 0
 lastTimeBombed = 0
 enemiesSpawn = False
+Powerlist = []
 
 while True:
     if pygame.time.get_ticks() > 5000:
@@ -150,13 +179,14 @@ while True:
         firstTimeFired = pygame.time.get_ticks()
         fire = True
 
-    if firstTimeFired - lastTimeFired >= 100:
+    if firstTimeFired - lastTimeFired >= 150:
         time = True
 
     # fires projectiles
     if fire and time:
         lastTimeFired = pygame.time.get_ticks()
-        projectileArrayPlayer.append(straight(player1.x, player1.y))
+        projectileArrayPlayer.append(straight(player1.x+6, player1.y, "player"))
+        projectileArrayPlayer.append(straight(player1.x-12, player1.y, "player"))
         time = False
 
     thisTimeSpawned = pygame.time.get_ticks()
@@ -173,7 +203,7 @@ while True:
 
 
     # spawns enemies
-    if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 5000:
+    if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 4000:
         lastTimeSpawned = pygame.time.get_ticks()
         numOfEn = random.randint(1, 4)
         for i in range(0, numOfEn):
@@ -188,15 +218,31 @@ while True:
                         del projectileArrayPlayer[i]
                         enemyArray[j].lose_health()
                         if enemyArray[j].health == 0:
+                            if random.randint(1,4) == 2:
+                                print(Powerlist)
+                                Powerlist.append(Power(enemyArray[j].x, enemyArray[j].y))
                             del enemyArray[j]
                 except:
                     pass
         except:
             pass
 
+    for i in range(0, len(Powerlist)):
+        try:
+            if Powerlist[i].check_collison(player1):
+                del Powerlist[i]
+                player1.power += 1
+        except:
+            pass
+
     # redraws the screen
-    screen.fill((0, 0, 0))
+    pygame.draw.rect(screen, black, (0,0,600,600))
+    pygame.draw.rect(screen, (0,0,200), (600,0,800,600))
     player1.display()
+    textSurfaceL = font.render("Lives: {}".format(player1.lives), True, (252,82,64))
+    textSurfaceP = font.render("Power: {}".format(player1.power), True, (252,82,64))
+    screen.blit(textSurfaceL, (620, 120))
+    screen.blit(textSurfaceP, (620, 220))
     for i in range(0, len(projectileArrayPlayer)):
         try:
             if projectileArrayPlayer[i].rect.y < 0:
@@ -204,8 +250,24 @@ while True:
         except:
             pass
         try:
+            if projectileArrayPlayer[i].rect.x > 600:
+                del projectileArrayPlayer[i]
+        except:
+            pass
+        try:
             projectileArrayPlayer[i].move()
             projectileArrayPlayer[i].display()
+        except:
+            pass
+
+    for i in range(0, len(Powerlist)):
+        try:
+            if Powerlist[i].rect.y > 800:
+                del Powerlist[i]
+        except:
+            pass
+        try:
+            Powerlist[i].display()
         except:
             pass
 
