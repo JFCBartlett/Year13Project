@@ -22,6 +22,11 @@ class Player:
         self.bombs = 3
         self.power = 0
         self.lives = 5
+        self.movementcountery = 0
+        self.movementcounteryshift = 0
+        self.movementcounterx = 0
+        self.movementcounterxshift = 0
+        self.rect = pygame.Rect(self.x, self.y, 7, 7)
         # this is the starting position of the player
 
     def move(self, direction1, shift):
@@ -30,42 +35,68 @@ class Player:
         # checks the current direction
         if direction1 == "up":
             # checks if at top of screen
-            if self.y <= 3:
-                self.y = 3
+            if self.rect.y <= 3:
+                self.rect.y = 3
             # if it is at the top of the screen it will stay still
             else:
                 if shift:
-                    self.y -= 0.08
+                    self.movementcounteryshift += 1
+                    if self.movementcounteryshift > 14:
+                        self.rect.y -= 1
+                        self.movementcounteryshift = 0
                 else:
-                    self.y -= 0.23
+                    self.movementcountery += 1
+                    if self.movementcountery > 4:
+                        self.rect.y -= 1
+                        self.movementcountery = 0
         elif direction1 == "down":
-            if self.y >= 600 - 3:
-                self.y = 600 - 3
+            if self.rect.y >= 600 - 3:
+                self.rect.y = 600 - 3
             else:
                 if shift:
-                    self.y += 0.08
+                    self.movementcounteryshift -= 1
+                    if self.movementcounteryshift < -14:
+                        self.rect.y += 1
+                        self.movementcounteryshift = 0
                 else:
-                    self.y += 0.23
+                    self.movementcountery -= 1
+                    if self.movementcountery < -4:
+                        self.rect.y += 1
+                        self.movementcountery = 0
         if direction1 == "left":
-            if self.x <= 3:
-                self.x = 3
+            if self.rect.x <= 3:
+                self.rect.x = 3
             else:
                 if shift:
-                    self.x -= 0.08
+                    self.movementcounterxshift += 1
+                    if self.movementcounterxshift > 14:
+                        self.rect.x -= 1
+                        self.movementcounterxshift = 0
                 else:
-                    self.x -= 0.24
+                    self.movementcounterx += 1
+                    if self.movementcounterx > 4:
+                        self.rect.x -= 1
+                        self.movementcounterx = 0
         elif direction1 == "right":
-            if self.x >= 600 - 3:
-                self.x = 600 - 3
+            if self.rect.x >= 600 - 3:
+                self.rect.x = 600 - 3
             else:
                 if shift:
-                    self.x += 0.08
+                    self.movementcounterxshift -= 1
+                    if self.movementcounterxshift < -14:
+                        self.rect.x += 1
+                        self.movementcounterxshift = 0
                 else:
-                    self.x += 0.24
+                    self.movementcounterx -= 1
+                    if self.movementcounterx < -4:
+                        self.rect.x += 1
+                        self.movementcounterx = 0
 
     # draw the character and defines its size
     def display(self):
-        pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), 3)
+        if self.power >= 125:
+            self.power = 125
+        pygame.draw.rect(screen, (225, 225, 225), self.rect)
 
 
 class enemy:
@@ -75,7 +106,7 @@ class enemy:
         self.y = y
         self.width = 20
         self.height = 20
-        self.health = random.randint(1,10)
+        self.health = random.randint(1,6)
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def fire(self):
@@ -85,35 +116,54 @@ class enemy:
     def lose_health(self):
         self.health -= 1
 
+    def move(self):
+        self.rect.x += random.randint(-1, 1)
+        self.rect.y += random.randint(-1, 1)
+
     def display(self):
         pygame.draw.rect(screen, (0, 225, 0), self.rect)
 
 class Power:
-    def __init__(self, x, y):
+    def __init__(self, x, y, big):
         self.x = x
         self.y = y
-        self.width = 10
-        self.height = 10
+        if big == True:
+            self.big = True
+        else:
+            self.big = False
+        if self.big:
+            self.width = 26
+            self.height = 26
+        else:
+            self.width = 14
+            self.height = 14
+        self.movementcounter = 0
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
-        def check_collision(self, player):
-            return self.rect.colliderect(player.rect)
+    def check_collision(self, player):
+        return self.rect.colliderect(player.rect)
 
-        def display(self):
-            pygame.draw.rect(screen, (225, 0, 0), self.rect)
-            rect.y -= 1
+    def display(self):
+        pygame.draw.rect(screen, (225, 0, 0), self.rect)
+        self.movementcounter += 1
+        if self.movementcounter > 6:
+            self.movementcounter = 0
+            self.rect.y += 1
 
 class projectile:
-    def __init__(self, x, y, ownedby):
+    def __init__(self, x, y, ownedby, side):
         if ownedby == "player":
             self.ownedByPlayer = True
         else:
             self.ownedByPlayer = False
+        self.side = side
         self.x = x
         self.y = y
         self.width = 6
         self.height = 6
-        self.movementCounter = 0
+        self.movementCounterx = 1
+        self.movementCountery = 0
+        self.secondMovement = 0
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def check_collision(self, Enemy):
@@ -125,12 +175,51 @@ class projectile:
 class straight(projectile):
 
     def move(self):
-        self.movementCounter += 1
-        if self.movementCounter >= 4:
-            self.movementCounter = 0
+        self.movementCountery += 1
+        if self.movementCountery >= 3:
+            self.movementCountery = 0
             self.rect.y -= 1
 
-
+class wiggly(projectile):
+    def move(self):
+        self.movementCountery += 1
+        if self.movementCountery >= 3:
+            self.movementCountery = 0
+            self.rect.y -= 1
+        if self.side == "left":
+            if self.movementCounterx < 0:
+                self.secondMovement += 1
+                if self.secondMovement >= 6:
+                    self.secondMovement = 0
+                    self.movementCounterx-=1
+                    self.rect.x +=1
+            if self.movementCounterx > 0:
+                self.secondMovement += 1
+                if self.secondMovement >= 6:
+                    self.secondMovement = 0
+                    self.movementCounterx+=1
+                    self.rect.x -=1
+            if self.movementCounterx > 50:
+                self.movementCounterx = -1
+            if self.movementCounterx < -50:
+                self.movementCounterx = 1
+        if self.side == "right":
+            if self.movementCounterx < 0:
+                self.secondMovement += 1
+                if self.secondMovement >= 6:
+                    self.secondMovement = 0
+                    self.movementCounterx-=1
+                    self.rect.x -=1
+            if self.movementCounterx > 0:
+                self.secondMovement += 1
+                if self.secondMovement >= 6:
+                    self.secondMovement = 0
+                    self.movementCounterx+=1
+                    self.rect.x +=1
+            if self.movementCounterx > 50:
+                self.movementCounterx = -1
+            if self.movementCounterx < -50:
+                self.movementCounterx = 1
 
 player1 = Player()
 Clock = pygame.time.Clock()
@@ -145,7 +234,7 @@ enemiesSpawn = False
 Powerlist = []
 
 while True:
-    if pygame.time.get_ticks() > 5000:
+    if pygame.time.get_ticks() > 3000:
         enemiesSpawn = True
 
     # closes the game if the pygame window is closed
@@ -179,14 +268,19 @@ while True:
         firstTimeFired = pygame.time.get_ticks()
         fire = True
 
-    if firstTimeFired - lastTimeFired >= 150:
+    if firstTimeFired - lastTimeFired >= 75:
         time = True
 
     # fires projectiles
     if fire and time:
         lastTimeFired = pygame.time.get_ticks()
-        projectileArrayPlayer.append(straight(player1.x+6, player1.y, "player"))
-        projectileArrayPlayer.append(straight(player1.x-12, player1.y, "player"))
+        projectileArrayPlayer.append(straight(player1.rect.x+12, player1.rect.y, "player", None))
+        projectileArrayPlayer.append(straight(player1.rect.x-12, player1.rect.y, "player", None))
+        if player1.power >= 25:
+            projectileArrayPlayer.append(straight(player1.rect.x, player1.rect.y - 4, "player", None))
+        if player1.power >= 125:
+            projectileArrayPlayer.append(wiggly(player1.rect.x, player1.rect.y - 4, "player", "left"))
+            projectileArrayPlayer.append(wiggly(player1.rect.x, player1.rect.y - 4, "player", "right"))
         time = False
 
     thisTimeSpawned = pygame.time.get_ticks()
@@ -205,7 +299,7 @@ while True:
     # spawns enemies
     if enemiesSpawn and thisTimeSpawned - lastTimeSpawned >= 4000:
         lastTimeSpawned = pygame.time.get_ticks()
-        numOfEn = random.randint(1, 4)
+        numOfEn = random.randint(1, 8)
         for i in range(0, numOfEn):
             enemyArray.append(enemy(random.randint(0, 580), random.randint(0, 150)))
 
@@ -218,22 +312,39 @@ while True:
                         del projectileArrayPlayer[i]
                         enemyArray[j].lose_health()
                         if enemyArray[j].health == 0:
-                            if random.randint(1,4) == 2:
-                                print(Powerlist)
-                                Powerlist.append(Power(enemyArray[j].x, enemyArray[j].y))
+                            if random.randint(1,3) == 2:
+                                if random.randint(1,10) == 4:
+                                    Powerlist.append(Power(enemyArray[j].rect.x, enemyArray[j].rect.y, True))
+                                else:
+                                    Powerlist.append(Power(enemyArray[j].rect.x, enemyArray[j].rect.y, False))
                             del enemyArray[j]
+                except:
+                    pass
+                try:
+                    if enemyArray[j].rect.y < 0:
+                        print("ojdw")
+                        del enemyArray[j]
                 except:
                     pass
         except:
             pass
 
-    for i in range(0, len(Powerlist)):
+    for j in range(0, len(enemyArray)):
         try:
-            if Powerlist[i].check_collison(player1):
-                del Powerlist[i]
-                player1.power += 1
+            if enemyArray[j].rect.y < -10 or enemyArray[j].rect.x < -10 or enemyArray[j].rect.y > 610 or enemyArray[j].rect.x > 590:
+                del enemyArray[j]
         except:
             pass
+    for i in range(0, len(Powerlist)):
+        try:
+            if Powerlist[i].check_collision(player1):
+                if Powerlist[i].big:
+                    player1.power += 5
+                else:
+                    player1.power += 1
+                del Powerlist[i]
+        except IndexError:
+            print("Index Error")
 
     # redraws the screen
     pygame.draw.rect(screen, black, (0,0,600,600))
@@ -268,13 +379,11 @@ while True:
             pass
         try:
             Powerlist[i].display()
-        except:
+        except IndexError:
             pass
 
     for i in range(0, len(enemyArray)):
-        try:
-            enemyArray[i].display()
-        except:
-            pass
+        enemyArray[i].move()
+        enemyArray[i].display()
 
     pygame.display.flip()
