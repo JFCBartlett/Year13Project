@@ -109,9 +109,11 @@ class enemy:
         self.health = random.randint(1,6)
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
-    def fire(self):
-        projectileArrayEnemy.append(straight(self.rect.x, self.rect.y))
+    def firestraight(self):
+        projectileArrayEnemy.append(straight(self.rect.x, self.rect.y, "enemy", None))
 
+    def firewiggly(self):
+        projectileArrayEnemy.append(wiggly(self.rect.x, self.rect.y, "enemy", "left"))
 
     def lose_health(self):
         self.health -= 1
@@ -170,22 +172,30 @@ class projectile:
         return self.rect.colliderect(Enemy.rect)
 
     def display(self):
-        pygame.draw.rect(screen, (255, 3, 234), self.rect)
-
+        if self.ownedByPlayer:
+            pygame.draw.rect(screen, (255, 3, 234), self.rect)
+        else:
+            pygame.draw.rect(screen, (0, 252, 21), self.rect)
 class straight(projectile):
 
     def move(self):
         self.movementCountery += 1
         if self.movementCountery >= 3:
             self.movementCountery = 0
-            self.rect.y -= 1
+            if self.ownedByPlayer == False:
+                self.rect.y += 1
+            else:
+                self.rect.y -= 1
 
 class wiggly(projectile):
     def move(self):
         self.movementCountery += 1
         if self.movementCountery >= 3:
             self.movementCountery = 0
-            self.rect.y -= 1
+            if self.ownedByPlayer == False:
+                self.rect.y += 1
+            else:
+                self.rect.y -= 1
         if self.side == "left":
             if self.movementCounterx < 0:
                 self.secondMovement += 1
@@ -231,6 +241,8 @@ lastTimeSpawned = 0
 thisTimeSpawned = 0
 lastTimeBombed = 0
 enemiesSpawn = False
+lastTimeDied = 0
+score = 0
 Powerlist = []
 
 while True:
@@ -239,7 +251,12 @@ while True:
 
     # closes the game if the pygame window is closed
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or player1.lives == 0:
+            if player1.lives == 0:
+                print("Game Over")
+                score += pygame.time.get_ticks()/1000
+                score = int(score)
+                print("Your final score was: {}".format(score))
             pygame.quit()
             sys.exit()
     # checks if the shift is pressed and gives true or false from it
@@ -268,7 +285,7 @@ while True:
         firstTimeFired = pygame.time.get_ticks()
         fire = True
 
-    if firstTimeFired - lastTimeFired >= 75:
+    if firstTimeFired - lastTimeFired >= 150:
         time = True
 
     # fires projectiles
@@ -278,7 +295,7 @@ while True:
         projectileArrayPlayer.append(straight(player1.rect.x-12, player1.rect.y, "player", None))
         if player1.power >= 25:
             projectileArrayPlayer.append(straight(player1.rect.x, player1.rect.y - 4, "player", None))
-        if player1.power >= 125:
+        if player1.power >= 10:
             projectileArrayPlayer.append(wiggly(player1.rect.x, player1.rect.y - 4, "player", "left"))
             projectileArrayPlayer.append(wiggly(player1.rect.x, player1.rect.y - 4, "player", "right"))
         time = False
@@ -312,18 +329,13 @@ while True:
                         del projectileArrayPlayer[i]
                         enemyArray[j].lose_health()
                         if enemyArray[j].health == 0:
+                            score += 10
                             if random.randint(1,3) == 2:
-                                if random.randint(1,10) == 4:
+                                if random.randint(1,6) == 4:
                                     Powerlist.append(Power(enemyArray[j].rect.x, enemyArray[j].rect.y, True))
                                 else:
                                     Powerlist.append(Power(enemyArray[j].rect.x, enemyArray[j].rect.y, False))
                             del enemyArray[j]
-                except:
-                    pass
-                try:
-                    if enemyArray[j].rect.y < 0:
-                        print("ojdw")
-                        del enemyArray[j]
                 except:
                     pass
         except:
@@ -335,16 +347,24 @@ while True:
                 del enemyArray[j]
         except:
             pass
+        try:
+           if random.randint(1,300) == 1:
+                enemyArray[j].firestraight()
+           elif random.randint(1,375) == 1:
+                enemyArray[j].firewiggly()
+        except:
+            pass
     for i in range(0, len(Powerlist)):
         try:
             if Powerlist[i].check_collision(player1):
+                score += 5
                 if Powerlist[i].big:
                     player1.power += 5
                 else:
                     player1.power += 1
                 del Powerlist[i]
         except IndexError:
-            print("Index Error")
+            pass
 
     # redraws the screen
     pygame.draw.rect(screen, black, (0,0,600,600))
@@ -352,8 +372,10 @@ while True:
     player1.display()
     textSurfaceL = font.render("Lives: {}".format(player1.lives), True, (252,82,64))
     textSurfaceP = font.render("Power: {}".format(player1.power), True, (252,82,64))
+    textSurfaceS = font.render("Score: {}".format(score), True, (252, 82, 64))
     screen.blit(textSurfaceL, (620, 120))
     screen.blit(textSurfaceP, (620, 220))
+    screen.blit(textSurfaceS, (620, 320))
     for i in range(0, len(projectileArrayPlayer)):
         try:
             if projectileArrayPlayer[i].rect.y < 0:
@@ -371,6 +393,23 @@ while True:
         except:
             pass
 
+    for i in range(0, len(projectileArrayEnemy)):
+        try:
+            if projectileArrayEnemy[i].rect.y < 0:
+                del projectileArrayEnemy[i]
+        except:
+            pass
+        try:
+            if projectileArrayEnemy[i].rect.x > 600:
+                del projectileArrayEnemy[i]
+        except:
+            pass
+        try:
+            projectileArrayEnemy[i].move()
+            projectileArrayEnemy[i].display()
+        except:
+            pass
+
     for i in range(0, len(Powerlist)):
         try:
             if Powerlist[i].rect.y > 800:
@@ -380,6 +419,16 @@ while True:
         try:
             Powerlist[i].display()
         except IndexError:
+            pass
+
+    for i in range(0, len(projectileArrayEnemy)):
+        try:
+            if pygame.time.get_ticks() - lastTimeDied > 5000:
+                if projectileArrayEnemy[i].check_collision(player1):
+                    del projectileArrayEnemy[i]
+                    player1.lives -=1
+                    lastTimeDied = pygame.time.get_ticks()
+        except:
             pass
 
     for i in range(0, len(enemyArray)):
